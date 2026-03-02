@@ -1,0 +1,29 @@
+TITLE: Basic Source Case
+URL: https://example.com/watch?v=basic123
+SUMMARY: Basic body source block example.
+
+YT_TITLE_SUGGESTED: Basic Source Case
+TITLE_SUGGESTED: Basic Source Case
+
+INTRO:
+This intro is just filler text.
+
+這段簡介只是填充內容。
+
+THUMBNAIL: basic-thumbnail.png
+
+BODY:
+00:00:00:00	00:00:03:00	患者出現腹脹。
+The patient has abdominal fullness.
+
+00:00:03:00	00:00:06:00	這種腹脹需要處理。
+This abdominal fullness needs treatment.
+
+https://example.com/source/basic
+中文名：腹脹
+英文名: Abdominal fullness syndrome
+腹脹 Abdominal fullness
+Source note mentions abdominal fullness and 腹脹 in the case description.
+
+00:00:06:00	00:00:09:00	下一句字幕。
+Next subtitle line.

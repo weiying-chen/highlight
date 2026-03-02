@@ -1,0 +1,19 @@
+TITLE: Intro Source Case
+URL: https://example.com/watch?v=intro123
+SUMMARY: Intro-local source block example.
+
+YT_TITLE_SUGGESTED: Intro Source Case
+TITLE_SUGGESTED: Intro Source Case
+
+INTRO:
+Silent Spring opens the story.
+春天故事慢慢展開。
+
+https://example.com/source/intro
+Source note mentions Silent Spring and 春天故事.
+
+THUMBNAIL: intro-thumbnail.png
+
+BODY:
+00:00:00:00	00:00:03:00	完全無關的字幕。
+Completely unrelated subtitle.

@@ -185,26 +185,115 @@ def star_en_phrase(line: str, phrase: str) -> str:
     return re.sub(pattern, lambda m: f"*{m.group(0)}*", line, flags=re.IGNORECASE)
 
 
+def build_timestamp_corpora_from_lines(lines: list[str]) -> tuple[str, str]:
+    zh_lines: list[str] = []
+    en_lines: list[str] = []
+    for i, line in enumerate(lines):
+        m = TS_RE.match(line)
+        if not m:
+            continue
+        zh = m.group(1).strip()
+        if zh:
+            zh_lines.append(zh)
+        if i + 1 < len(lines):
+            en = lines[i + 1].strip()
+            if en and not URL_RE.match(en):
+                en_lines.append(en)
+    return "\n".join(zh_lines), "\n".join(en_lines)
+
+
 def build_timestamp_corpora(paths: list[Path]) -> tuple[str, str]:
     zh_lines: list[str] = []
     en_lines: list[str] = []
     for p in paths:
-        lines = p.read_text(encoding="utf-8").splitlines()
-        for i, line in enumerate(lines):
-            m = TS_RE.match(line)
-            if not m:
-                continue
-            zh = m.group(1).strip()
-            if zh:
-                zh_lines.append(zh)
-            if i + 1 < len(lines):
-                en = lines[i + 1].strip()
-                if en and not URL_RE.match(en):
-                    en_lines.append(en)
+        zh, en = build_timestamp_corpora_from_lines(
+            p.read_text(encoding="utf-8").splitlines()
+        )
+        if zh:
+            zh_lines.append(zh)
+        if en:
+            en_lines.append(en)
     return "\n".join(zh_lines), "\n".join(en_lines)
 
 
-def build_local_corpora(lines: list[str], url_idx: int, max_pairs: int = 24) -> tuple[str, str]:
+def _nearest_header(lines: list[str], start_idx: int) -> tuple[int, str] | None:
+    for idx in range(start_idx, -1, -1):
+        line = lines[idx]
+        if ":" not in line:
+            continue
+        key = line.split(":", 1)[0].strip().upper()
+        if key in HEADER_KEYS:
+            return idx, key
+    return None
+
+
+def _split_nonempty_blocks(lines: list[str]) -> list[list[str]]:
+    blocks: list[list[str]] = []
+    current: list[str] = []
+    for line in lines:
+        if line.strip():
+            current.append(line)
+            continue
+        if current:
+            blocks.append(current)
+            current = []
+    if current:
+        blocks.append(current)
+    return blocks
+
+
+def _looks_chinese(text: str) -> bool:
+    return bool(re.search(r"[\u4e00-\u9fff]", text))
+
+
+def _looks_english(text: str) -> bool:
+    return bool(re.search(r"[A-Za-z]", text))
+
+
+def _extract_intro_block_context(block: list[str]) -> tuple[str, str]:
+    zh_lines: list[str] = []
+    en_lines: list[str] = []
+
+    for line in block:
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if _looks_chinese(stripped):
+            zh_lines.append(stripped)
+        if _looks_english(stripped):
+            en_lines.append(stripped)
+
+    return "\n".join(zh_lines), "\n".join(en_lines)
+
+
+def build_intro_local_corpora(lines: list[str], url_idx: int) -> tuple[str, str]:
+    header = _nearest_header(lines, url_idx - 1)
+    if header is None:
+        return "", ""
+
+    header_idx, header_key = header
+    if header_key != "INTRO":
+        return "", ""
+
+    blocks = _split_nonempty_blocks(lines[header_idx + 1 : url_idx])
+    zh_block = ""
+    en_block = ""
+
+    for block in reversed(blocks):
+        block_zh, block_en = _extract_intro_block_context(block)
+        if not zh_block and block_zh:
+            zh_block = block_zh
+        if not en_block and block_en:
+            en_block = block_en
+        if zh_block and en_block:
+            break
+
+    return zh_block, en_block
+
+
+def build_subtitle_local_corpora(
+    lines: list[str], url_idx: int, max_pairs: int = 24
+) -> tuple[str, str]:
     """Collect a local subtitle context immediately above a URL source block."""
     zh_lines: list[str] = []
     en_lines: list[str] = []
@@ -262,6 +351,13 @@ def build_local_corpora(lines: list[str], url_idx: int, max_pairs: int = 24) -> 
     zh_lines.reverse()
     en_lines.reverse()
     return "\n".join(zh_lines), "\n".join(en_lines)
+
+
+def build_local_corpora(lines: list[str], url_idx: int, max_pairs: int = 24) -> tuple[str, str]:
+    zh, en = build_intro_local_corpora(lines, url_idx)
+    if zh or en:
+        return zh, en
+    return build_subtitle_local_corpora(lines, url_idx, max_pairs=max_pairs)
 
 
 def has_zh(term: str, zh: str, zh_s: str, zh_t: str) -> bool:
@@ -417,6 +513,10 @@ def process_source_line(
     for phrase in sorted(pools.en_tcm_lower, key=len, reverse=True):
         if has_en(phrase, en_norm):
             new = star_en_phrase(new, phrase)
+
+    for run in sorted(set(ZH_CHUNK_RE.findall(new)), key=len, reverse=True):
+        if has_zh(run, zh, zh_s, zh_t):
+            new = star_zh_term_variants(new, run)
 
     for run in sorted(pools.zh_long, key=len, reverse=True):
         if has_zh(run, zh, zh_s, zh_t):
