@@ -77,7 +77,7 @@ STANDALONE_ZH_RE = re.compile(r"^[\u4e00-\u9fff]{2,10}$")
 
 # Candidate extractors for free-text source lines.
 EN_TITLE_CHUNK_RE = re.compile(
-    r"\b[A-Z][A-Za-z-]*(?: (?:[A-Z][A-Za-z-]*|and|of|the|for|in|with|to)){0,8}\b"
+    r"\b(?:[A-Z]\.|[A-Z][A-Za-z-]*)(?: (?:[A-Z]\.|[A-Z][A-Za-z-]*|and|of|the|for|in|with|to)){0,8}\b"
 )
 EN_TCM_LOWER_RE = re.compile(r"\b(?:[a-z]+(?:-[a-z]+)?(?: [a-z]+){0,6})\b")
 ZH_CHUNK_RE = re.compile(r"[\u4e00-\u9fff]{2,20}")
@@ -157,7 +157,7 @@ def norm_en(text: str) -> str:
 def star_term(line: str, term: str) -> str:
     if not term:
         return line
-    pattern = re.compile(rf"(?<!\*){re.escape(term)}(?!\*)")
+    pattern = re.compile(rf"(?<!\*){re.escape(term)}")
     return pattern.sub(f"*{term}*", line)
 
 
@@ -178,9 +178,16 @@ def star_en_phrase(line: str, phrase: str) -> str:
     toks = phrase.split()
     if not toks:
         return line
-    pattern = r"(?<!\*)\b" + re.escape(toks[0]) + r"\b"
+    token_boundary_left = r"(?<![A-Za-z0-9])"
+    token_boundary_right = r"(?![A-Za-z0-9])"
+    pattern = r"(?<!\*)" + token_boundary_left + re.escape(toks[0]) + token_boundary_right
     for tok in toks[1:]:
-        pattern += r"(?:[^A-Za-z0-9]+)\b" + re.escape(tok) + r"\b"
+        pattern += (
+            r"(?:[^A-Za-z0-9]+)"
+            + token_boundary_left
+            + re.escape(tok)
+            + token_boundary_right
+        )
     pattern += r"(?!\*)"
     return re.sub(pattern, lambda m: f"*{m.group(0)}*", line, flags=re.IGNORECASE)
 
@@ -470,7 +477,11 @@ def process_source_line(
     m = EN_LABEL_RE.match(new)
     if m:
         pre, value = m.groups()
-        parts = [x.strip() for x in re.split(r"[·|,;()]+", value) if x.strip()]
+        parts = [
+            x.strip()
+            for x in re.split(r"[·|,;()（），、；：]+", value)
+            if x.strip()
+        ]
         for part in parts:
             if re.search(r"[A-Za-z]", part):
                 if has_en(part, en_norm):

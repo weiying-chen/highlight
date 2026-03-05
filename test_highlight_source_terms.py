@@ -106,6 +106,57 @@ class HighlightSourceTermsTests(unittest.TestCase):
             result,
         )
 
+    def test_free_text_source_line_highlights_dotted_initial_name(self) -> None:
+        zh_text = "測試"
+        en_text = "As psychologist J. William Worden said."
+
+        result = subject.process_source_line(
+            "Source note: J. William Worden.",
+            zh_text,
+            subject.to_simp(zh_text),
+            subject.to_trad(zh_text),
+            subject.norm_en(en_text),
+            subject.build_match_pools(zh_text, en_text),
+        )
+
+        self.assertEqual(
+            "Source note: *J. William Worden*.",
+            result,
+        )
+
+    def test_en_label_with_fullwidth_punctuation_highlights_full_name(self) -> None:
+        line = "英文名：沃登（J. William Worden，美國心理學會）"
+        zh_text = "沃登"
+        en_text = "As psychologist J. William Worden said."
+
+        result = subject.process_source_line(
+            line,
+            zh_text,
+            subject.to_simp(zh_text),
+            subject.to_trad(zh_text),
+            subject.norm_en(en_text),
+            subject.build_match_pools(zh_text, en_text),
+        )
+
+        self.assertIn("*J. William Worden*", result)
+
+    def test_free_text_highlights_zh_before_starred_en_without_blocking(self) -> None:
+        line = "歐文‧亞隆Irvin D. Yalom. 1931年6月13日生於美國華盛頓特區"
+        zh_text = "Yalom( 亞隆)這位存在治療大師"
+        en_text = "Existential therapist Irvin D. Yalom once said."
+
+        result = subject.process_source_line(
+            line,
+            zh_text,
+            subject.to_simp(zh_text),
+            subject.to_trad(zh_text),
+            subject.norm_en(en_text),
+            subject.build_match_pools(zh_text, en_text),
+        )
+
+        self.assertIn("*亞隆*", result)
+        self.assertIn("*Irvin D. Yalom*", result)
+
     def test_transform_text_only_processes_lines_inside_source_block(self) -> None:
         text = "\n".join(
             [
