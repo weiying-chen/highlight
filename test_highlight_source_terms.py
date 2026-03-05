@@ -108,10 +108,10 @@ class HighlightSourceTermsTests(unittest.TestCase):
 
     def test_free_text_source_line_highlights_dotted_initial_name(self) -> None:
         zh_text = "測試"
-        en_text = "As psychologist J. William Worden said."
+        en_text = "As researcher J. Alex Carter said."
 
         result = subject.process_source_line(
-            "Source note: J. William Worden.",
+            "Source note: J. Alex Carter.",
             zh_text,
             subject.to_simp(zh_text),
             subject.to_trad(zh_text),
@@ -120,16 +120,16 @@ class HighlightSourceTermsTests(unittest.TestCase):
         )
 
         self.assertEqual(
-            "Source note: *J. William Worden*.",
+            "Source note: *J. Alex Carter*.",
             result,
         )
 
     def test_free_text_source_line_highlights_name_inside_parentheses(self) -> None:
-        zh_text = "正念練習"
-        en_text = "As Professor Jon Kabat-Zinn said."
+        zh_text = "示範練習"
+        en_text = "As Professor Maya Lee said."
 
         result = subject.process_source_line(
-            "他提到（Jon Kabat-Zinn）推廣此方法超過四十年。",
+            "他提到（Maya Lee）推廣此方法超過四十年。",
             zh_text,
             subject.to_simp(zh_text),
             subject.to_trad(zh_text),
@@ -137,12 +137,12 @@ class HighlightSourceTermsTests(unittest.TestCase):
             subject.build_match_pools(zh_text, en_text),
         )
 
-        self.assertIn("*Jon Kabat-Zinn*", result)
+        self.assertIn("*Maya Lee*", result)
 
     def test_en_label_with_fullwidth_punctuation_highlights_full_name(self) -> None:
-        line = "英文名：沃登（J. William Worden，美國心理學會）"
-        zh_text = "沃登"
-        en_text = "As psychologist J. William Worden said."
+        line = "英文名：卡特（J. Alex Carter，心理學研究者）"
+        zh_text = "卡特"
+        en_text = "As researcher J. Alex Carter said."
 
         result = subject.process_source_line(
             line,
@@ -153,12 +153,12 @@ class HighlightSourceTermsTests(unittest.TestCase):
             subject.build_match_pools(zh_text, en_text),
         )
 
-        self.assertIn("*J. William Worden*", result)
+        self.assertIn("*J. Alex Carter*", result)
 
     def test_free_text_highlights_zh_before_starred_en_without_blocking(self) -> None:
-        line = "歐文‧亞隆Irvin D. Yalom. 1931年6月13日生於美國華盛頓特區"
-        zh_text = "Yalom( 亞隆)這位存在治療大師"
-        en_text = "Existential therapist Irvin D. Yalom once said."
+        line = "這位學者林博士Iris Lin. 1980年生於某地"
+        zh_text = "Lin( 林博士)提出了一個觀點"
+        en_text = "Iris Lin once said."
 
         result = subject.process_source_line(
             line,
@@ -169,8 +169,8 @@ class HighlightSourceTermsTests(unittest.TestCase):
             subject.build_match_pools(zh_text, en_text),
         )
 
-        self.assertIn("*亞隆*", result)
-        self.assertIn("*Irvin D. Yalom*", result)
+        self.assertIn("*林博士*", result)
+        self.assertIn("*Iris Lin*", result)
 
     def test_transform_text_only_processes_lines_inside_source_block(self) -> None:
         text = "\n".join(
