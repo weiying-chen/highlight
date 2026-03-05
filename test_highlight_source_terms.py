@@ -124,6 +124,21 @@ class HighlightSourceTermsTests(unittest.TestCase):
             result,
         )
 
+    def test_free_text_source_line_highlights_name_inside_parentheses(self) -> None:
+        zh_text = "正念練習"
+        en_text = "As Professor Jon Kabat-Zinn said."
+
+        result = subject.process_source_line(
+            "他提到（Jon Kabat-Zinn）推廣此方法超過四十年。",
+            zh_text,
+            subject.to_simp(zh_text),
+            subject.to_trad(zh_text),
+            subject.norm_en(en_text),
+            subject.build_match_pools(zh_text, en_text),
+        )
+
+        self.assertIn("*Jon Kabat-Zinn*", result)
+
     def test_en_label_with_fullwidth_punctuation_highlights_full_name(self) -> None:
         line = "英文名：沃登（J. William Worden，美國心理學會）"
         zh_text = "沃登"

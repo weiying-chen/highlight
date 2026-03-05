@@ -521,6 +521,11 @@ def process_source_line(
         if has_en(phrase, en_norm):
             new = star_en_phrase(new, phrase)
 
+    for chunk in sorted(set(EN_TITLE_CHUNK_RE.findall(new)), key=len, reverse=True):
+        phrase = chunk.strip()
+        if len(phrase.split()) >= 2 and has_en(phrase, en_norm):
+            new = star_en_phrase(new, phrase)
+
     for phrase in sorted(pools.en_tcm_lower, key=len, reverse=True):
         if has_en(phrase, en_norm):
             new = star_en_phrase(new, phrase)
